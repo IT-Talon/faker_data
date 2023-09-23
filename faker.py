@@ -1,5 +1,6 @@
 import psycopg2
 from faker import Faker
+from psycopg2.extras import execute_batch
 import random
 
 # 连接到 PostgreSQL 数据库
@@ -16,22 +17,19 @@ cur = conn.cursor()
 # 创建 Faker 实例
 fake = Faker(locale='zh_CN')
 
+data = []
 # 插入 1000 万条测试数据
 for _ in range(10000000):
-    # 生成随机数据
-    name = fake.name()
-    email = fake.email()
-    address = fake.address()
-    gender = random.choice(['Male', 'Female'])
-    age = random.randint(18, 65)
+    row = (fake.name(), random.randint(18, 65), fake.phone_number(),
+           fake.email(), fake.address(), random.choice(['Male', 'Female']))
+    data.append(row)
 
-    # 构建 SQL 插入语句
-    sql = "INSERT INTO faker (name, email, age,gender,address) VALUES (%s, %s,%s, %s,%s)"
-    data = (name, email, age,gender,address)
 
-    # 执行 SQL 插入
-    cur.execute(sql, data)
+query = "INSERT INTO faker (name, age, phone_number,email,address,gender) VALUES (%s,%s,%s,%s, %s, %s)"
+execute_batch(cur, query, data)
+
 
 # 提交更改并关闭连接
 conn.commit()
+cur.close()
 conn.close()
